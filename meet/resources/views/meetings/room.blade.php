@@ -5,59 +5,74 @@
 
 @push('styles')
 <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1f2937; color: white; overflow: hidden; }
-        
-        .meeting-container { display: grid; grid-template-columns: 1fr 300px; height: 100vh; }
+        .meeting-container { display: grid; grid-template-columns: 1fr 320px; height: calc(100vh - 4rem); background: var(--navy-bg); }
         .main-area { display: flex; flex-direction: column; }
-        .video-grid { flex: 1; display: grid; gap: 8px; padding: 20px; }
+        .video-grid { flex: 1; display: grid; gap: 12px; padding: 1.5rem; background: linear-gradient(135deg, var(--navy-bg) 0%, #0a0f1a 100%); }
         .video-grid.grid-1 { grid-template-columns: 1fr; }
         .video-grid.grid-2 { grid-template-columns: 1fr 1fr; }
         .video-grid.grid-3 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
         .video-grid.grid-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
         .video-grid.grid-many { grid-template-columns: repeat(3, 1fr); }
         
-        .video-tile { background: #374151; border-radius: 8px; position: relative; overflow: hidden; }
-        .video-tile video { width: 100%; height: 100%; object-fit: cover; }
-        .video-tile.speaking { border: 3px solid #10b981; }
-        .video-tile .user-info { position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 4px; font-size: 12px; }
-        .video-tile .muted { position: absolute; top: 8px; right: 8px; background: #ef4444; padding: 4px; border-radius: 50%; }
+        .video-tile { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius); position: relative; overflow: hidden; transition: all 0.3s ease; }
+        .video-tile:hover { border-color: var(--cyan-accent); box-shadow: 0 0 20px rgba(0, 201, 255, 0.2); }
+        .video-tile video { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius); }
+        .video-tile.speaking { border: 2px solid var(--cyan-accent); box-shadow: 0 0 25px rgba(0, 201, 255, 0.4); }
+        .video-tile .user-info { position: absolute; bottom: 12px; left: 12px; background: rgba(0,0,0,0.8); padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; color: var(--diamond-white); backdrop-filter: blur(10px); }
+        .video-tile .muted { position: absolute; top: 12px; right: 12px; background: rgba(239, 68, 68, 0.9); padding: 6px; border-radius: 50%; color: white; font-size: 0.8rem; }
         
-        .controls-bar { display: flex; justify-content: center; gap: 15px; padding: 20px; background: #111827; }
-        .control-btn { width: 48px; height: 48px; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-        .control-btn.active { background: #ef4444; color: white; }
-        .control-btn.inactive { background: #374151; color: #9ca3af; }
-        .control-btn.primary { background: #10b981; color: white; }
+        .controls-bar { display: flex; justify-content: center; gap: 1rem; padding: 1.5rem; background: linear-gradient(135deg, var(--charcoal) 0%, var(--navy-bg) 100%); border-top: 1px solid rgba(0, 201, 255, 0.2); }
+        .control-btn { width: 56px; height: 56px; border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.3s ease; background: rgba(255,255,255,0.05); }
+        .control-btn:hover { transform: scale(1.1); border-color: var(--cyan-accent); }
+        .control-btn.active { background: #ef4444; color: white; border-color: #ef4444; }
+        .control-btn.inactive { background: rgba(255,255,255,0.05); color: var(--cool-gray); }
+        .control-btn.primary { background: var(--cyan-accent); color: var(--navy-bg); border-color: var(--cyan-accent); }
         
-        .sidebar { background: #374151; display: flex; flex-direction: column; }
-        .sidebar-tabs { display: flex; border-bottom: 1px solid #4b5563; }
-        .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; background: none; border: none; color: #9ca3af; }
-        .tab.active { color: white; background: #4b5563; }
+        .sidebar { background: linear-gradient(180deg, var(--charcoal) 0%, var(--navy-bg) 100%); display: flex; flex-direction: column; border-left: 1px solid rgba(0, 201, 255, 0.2); }
+        .sidebar-tabs { display: flex; border-bottom: 1px solid rgba(0, 201, 255, 0.2); background: rgba(255,255,255,0.02); }
+        .tab { flex: 1; padding: 1rem 0.5rem; text-align: center; cursor: pointer; background: none; border: none; color: var(--cool-gray); font-weight: 500; transition: all 0.3s ease; }
+        .tab.active { color: var(--cyan-accent); background: rgba(0, 201, 255, 0.1); }
+        .tab:hover { color: var(--diamond-white); }
         .sidebar-content { flex: 1; overflow-y: auto; }
         
-        .chat-area { padding: 15px; }
-        .chat-messages { height: 300px; overflow-y: auto; margin-bottom: 15px; }
-        .chat-input { width: 100%; padding: 10px; border: 1px solid #4b5563; border-radius: 6px; background: #1f2937; color: white; }
+        .chat-area { padding: 1.25rem; }
+        .chat-messages { height: 300px; overflow-y: auto; margin-bottom: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); }
+        .chat-input { width: 100%; padding: 0.75rem; border: 1px solid rgba(0, 201, 255, 0.3); border-radius: 8px; background: rgba(255,255,255,0.05); color: var(--diamond-white); font-family: inherit; }
+        .chat-input:focus { outline: none; border-color: var(--cyan-accent); box-shadow: 0 0 0 2px rgba(0, 201, 255, 0.2); }
         
-        .notes-area { padding: 15px; }
-        .notes-editor { width: 100%; height: 300px; padding: 10px; border: 1px solid #4b5563; border-radius: 6px; background: #1f2937; color: white; resize: none; }
+        .notes-area { padding: 1.25rem; }
+        .notes-editor { width: 100%; height: 300px; padding: 0.75rem; border: 1px solid rgba(0, 201, 255, 0.3); border-radius: 8px; background: rgba(255,255,255,0.05); color: var(--diamond-white); resize: none; font-family: inherit; }
+        .notes-editor:focus { outline: none; border-color: var(--cyan-accent); box-shadow: 0 0 0 2px rgba(0, 201, 255, 0.2); }
         
-        .participants-list { padding: 15px; }
-        .participant { display: flex; align-items: center; gap: 10px; padding: 8px; margin-bottom: 5px; }
-        .participant.hand-raised { background: #fbbf24; color: #92400e; border-radius: 6px; }
+        .participants-list { padding: 1.25rem; }
+        .participants-list h4 { color: var(--diamond-white); margin-bottom: 1rem; font-size: 1rem; }
+        .participant { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; margin-bottom: 0.5rem; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); transition: all 0.3s ease; }
+        .participant:hover { background: rgba(0, 201, 255, 0.05); border-color: rgba(0, 201, 255, 0.2); }
+        .participant.hand-raised { background: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.3); color: #fbbf24; }
         
-        .hand-queue { margin-top: 20px; }
-        .hand-queue h4 { margin-bottom: 10px; color: #fbbf24; }
+        .hand-queue { margin-top: 1.5rem; }
+        .hand-queue h4 { margin-bottom: 0.75rem; color: #fbbf24; font-size: 0.9rem; }
         
-        .poll-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; }
-        .poll-content { background: #374151; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; }
-        .poll-option { margin: 10px 0; padding: 10px; background: #4b5563; border-radius: 6px; cursor: pointer; }
-        .poll-option:hover { background: #6b7280; }
+        .poll-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(5px); }
+        .poll-content { background: linear-gradient(135deg, var(--charcoal) 0%, var(--navy-bg) 100%); padding: 2rem; border-radius: var(--radius); max-width: 500px; width: 90%; border: 1px solid rgba(0, 201, 255, 0.2); }
+        .poll-content h3 { color: var(--diamond-white); margin-bottom: 1rem; }
+        .poll-option { margin: 0.75rem 0; padding: 0.75rem; background: rgba(255,255,255,0.05); border-radius: 8px; cursor: pointer; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.1); }
+        .poll-option:hover { background: rgba(0, 201, 255, 0.1); border-color: var(--cyan-accent); }
 </style>
 @endpush
 
 @section('content')
-<div class="meeting-container" style="margin: -2rem -5% 0; width: 110%; height: calc(100vh - 4rem);">
+@endsection
+
+@push('styles')
+<style>
+    body { overflow: hidden !important; }
+    .container { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: none !important; }
+    main { padding: 0 !important; }
+</style>
+@endpush
+
+<div class="meeting-container" style="position: fixed; top: 4rem; left: 0; right: 0; bottom: 0; margin: 0; width: 100vw; height: calc(100vh - 4rem); z-index: 10;">
         <div class="main-area">
             <div id="videoGrid" class="video-grid grid-1">
                 <div class="video-tile" id="localTile">
@@ -575,4 +590,3 @@
         setTimeout(loadParticipants, 1000);
 </script>
 @endpush
-@endsection
