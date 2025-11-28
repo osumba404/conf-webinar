@@ -5,9 +5,11 @@
 
 @push('styles')
 <style>
-        .meeting-container { display: grid; grid-template-columns: 1fr 320px; height: calc(100vh - 4rem); background: var(--navy-bg); }
+        .meeting-container { display: grid; grid-template-columns: 1fr 0px; height: 100vh; background: var(--navy-bg); transition: grid-template-columns 0.3s ease; }
+        .meeting-container.sidebar-open { grid-template-columns: 1fr 320px; }
         .main-area { display: flex; flex-direction: column; }
-        .video-grid { flex: 1; display: grid; gap: 12px; padding: 1.5rem; background: linear-gradient(135deg, var(--navy-bg) 0%, #0a0f1a 100%); }
+        .video-grid { flex: 1; display: flex; align-items: center; justify-content: center; gap: 20px; padding: 2rem; background: linear-gradient(135deg, var(--navy-bg) 0%, #0a0f1a 100%); flex-wrap: wrap; }
+        .video-grid.has-video { display: grid; gap: 12px; }
         .video-grid.grid-1 { grid-template-columns: 1fr; }
         .video-grid.grid-2 { grid-template-columns: 1fr 1fr; }
         .video-grid.grid-3 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
@@ -15,6 +17,8 @@
         .video-grid.grid-many { grid-template-columns: repeat(3, 1fr); }
         
         .video-tile { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius); position: relative; overflow: hidden; transition: all 0.3s ease; }
+        .participant-avatar { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 120px; height: 120px; background: linear-gradient(135deg, var(--cyan-accent), #0ea5e9); border-radius: 50%; color: var(--navy-bg); font-size: 2.5rem; font-weight: bold; margin: 10px; }
+        .participant-name { margin-top: 8px; color: var(--diamond-white); font-size: 0.9rem; text-align: center; }
         .video-tile:hover { border-color: var(--cyan-accent); box-shadow: 0 0 20px rgba(0, 201, 255, 0.2); }
         .video-tile video { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius); }
         .video-tile.speaking { border: 2px solid var(--cyan-accent); box-shadow: 0 0 25px rgba(0, 201, 255, 0.4); }
@@ -28,16 +32,22 @@
         .control-btn.inactive { background: rgba(255,255,255,0.05); color: var(--cool-gray); }
         .control-btn.primary { background: var(--cyan-accent); color: var(--navy-bg); border-color: var(--cyan-accent); }
         
-        .sidebar { background: linear-gradient(180deg, var(--charcoal) 0%, var(--navy-bg) 100%); display: flex; flex-direction: column; border-left: 1px solid rgba(0, 201, 255, 0.2); }
+        .sidebar { background: linear-gradient(180deg, var(--charcoal) 0%, var(--navy-bg) 100%); display: flex; flex-direction: column; border-left: 1px solid rgba(0, 201, 255, 0.2); transform: translateX(100%); transition: transform 0.3s ease; }
+        .sidebar.open { transform: translateX(0); }
+        .sidebar-toggle { position: fixed; top: 50%; right: 20px; z-index: 1000; background: var(--cyan-accent); color: var(--navy-bg); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; transition: all 0.3s ease; }
+        .sidebar-toggle:hover { background: #0ea5e9; }
         .sidebar-tabs { display: flex; border-bottom: 1px solid rgba(0, 201, 255, 0.2); background: rgba(255,255,255,0.02); }
         .tab { flex: 1; padding: 1rem 0.5rem; text-align: center; cursor: pointer; background: none; border: none; color: var(--cool-gray); font-weight: 500; transition: all 0.3s ease; }
         .tab.active { color: var(--cyan-accent); background: rgba(0, 201, 255, 0.1); }
         .tab:hover { color: var(--diamond-white); }
         .sidebar-content { flex: 1; overflow-y: auto; }
         
-        .chat-area { padding: 1.25rem; }
-        .chat-messages { height: 300px; overflow-y: auto; margin-bottom: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); }
-        .chat-input { width: 100%; padding: 0.75rem; border: 1px solid rgba(0, 201, 255, 0.3); border-radius: 8px; background: rgba(255,255,255,0.05); color: var(--diamond-white); font-family: inherit; }
+        .chat-area { padding: 1.25rem; display: flex; flex-direction: column; height: 100%; }
+        .chat-messages { flex: 1; overflow-y: auto; margin-bottom: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); }
+        .chat-input-container { display: flex; gap: 8px; }
+        .chat-input { flex: 1; padding: 0.75rem; border: 1px solid rgba(0, 201, 255, 0.3); border-radius: 8px; background: rgba(255,255,255,0.05); color: var(--diamond-white); font-family: inherit; }
+        .chat-send-btn { padding: 0.75rem; background: var(--cyan-accent); color: var(--navy-bg); border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; }
+        .chat-send-btn:hover { background: #0ea5e9; }
         .chat-input:focus { outline: none; border-color: var(--cyan-accent); box-shadow: 0 0 0 2px rgba(0, 201, 255, 0.2); }
         
         .notes-area { padding: 1.25rem; }
@@ -69,13 +79,22 @@
     body { overflow: hidden !important; }
     .container { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: none !important; }
     main { padding: 0 !important; }
+    nav { display: none !important; }
+    header { display: none !important; }
 </style>
 @endpush
 
-<div class="meeting-container" style="position: fixed; top: 4rem; left: 0; right: 0; bottom: 0; margin: 0; width: 100vw; height: calc(100vh - 4rem); z-index: 10;">
+<div class="meeting-container" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; margin: 0; width: 100vw; height: 100vh; z-index: 10;">
+    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+        <i class="fas fa-comments"></i>
+    </button>
         <div class="main-area">
-            <div id="videoGrid" class="video-grid grid-1">
-                <div class="video-tile" id="localTile">
+            <div id="videoGrid" class="video-grid">
+                <div class="participant-avatar" id="localAvatar">
+                    <i class="fas fa-user"></i>
+                    <div class="participant-name">You</div>
+                </div>
+                <div class="video-tile" id="localTile" style="display: none;">
                     <video id="localVideo" autoplay muted></video>
                     <div class="user-info">You</div>
                 </div>
@@ -106,20 +125,25 @@
         <div class="sidebar">
             <div class="sidebar-tabs">
                 <button class="tab active" onclick="switchTab('chat')">Chat</button>
-                <button class="tab" onclick="switchTab('notes')">Notes</button>
+                {{-- <button class="tab" onclick="switchTab('notes')">Notes</button> --}}
                 <button class="tab" onclick="switchTab('people')">People</button>
             </div>
             
             <div class="sidebar-content">
                 <div id="chatTab" class="chat-area">
                     <div id="chatMessages" class="chat-messages"></div>
-                    <input type="text" id="chatInput" class="chat-input" placeholder="Type a message...">
+                    <div class="chat-input-container">
+                        <input type="text" id="chatInput" class="chat-input" placeholder="Type a message...">
+                        <button class="chat-send-btn" onclick="sendChatMessage()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
                 </div>
                 
-                <div id="notesTab" class="notes-area" style="display: none;">
+                {{-- <div id="notesTab" class="notes-area" style="display: none;">
                     <h4>Shared Meeting Notes</h4>
                     <textarea id="notesEditor" class="notes-editor" placeholder="Collaborative notes..."></textarea>
-                </div>
+                </div> --}}
                 
                 <div id="peopleTab" class="participants-list" style="display: none;">
                     <h4>Participants (<span id="participantCount">1</span>)</h4>
@@ -176,6 +200,22 @@
             setupEventListeners();
             updateControlButtons();
         }
+        
+        function toggleSidebar() {
+            const container = document.querySelector('.meeting-container');
+            const sidebar = document.querySelector('.sidebar');
+            const toggle = document.getElementById('sidebarToggle');
+            
+            container.classList.toggle('sidebar-open');
+            sidebar.classList.toggle('open');
+            
+            const icon = toggle.querySelector('i');
+            if (container.classList.contains('sidebar-open')) {
+                icon.className = 'fas fa-times';
+            } else {
+                icon.className = 'fas fa-comments';
+            }
+        }
 
         async function setupWebSocket() {
             // Join meeting via HTTP
@@ -218,19 +258,27 @@
                 localStream.getAudioTracks().forEach(track => track.enabled = !isAudioMuted);
                 localStream.getVideoTracks().forEach(track => track.enabled = !isVideoMuted);
                 
+                // Show avatar by default, video tile when video is enabled
+                updateLocalView();
+                
             } catch (error) {
                 console.error('Failed to get local media:', error);
-                // Show user-friendly error message
-                const localTile = document.getElementById('localTile');
-                localTile.innerHTML = `
-                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #1f2937; color: #9ca3af; text-align: center; padding: 20px;">
-                        <div>
-                            <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 10px;"></i>
-                            <p>Camera/Microphone access denied</p>
-                            <p style="font-size: 0.8rem;">Please allow access and refresh</p>
-                        </div>
-                    </div>
-                `;
+            }
+        }
+        
+        function updateLocalView() {
+            const avatar = document.getElementById('localAvatar');
+            const tile = document.getElementById('localTile');
+            const grid = document.getElementById('videoGrid');
+            
+            if (localStream && localStream.getVideoTracks().length > 0 && localStream.getVideoTracks()[0].enabled && !isVideoMuted) {
+                avatar.style.display = 'none';
+                tile.style.display = 'block';
+                grid.classList.add('has-video');
+            } else {
+                avatar.style.display = 'flex';
+                tile.style.display = 'none';
+                if (grid.children.length <= 2) grid.classList.remove('has-video');
             }
         }
 
@@ -384,9 +432,21 @@
         
         function addVideoTile(peerId, stream) {
             const videoGrid = document.getElementById('videoGrid');
+            
+            // Create avatar
+            const avatar = document.createElement('div');
+            avatar.className = 'participant-avatar';
+            avatar.id = `avatar-${peerId}`;
+            avatar.innerHTML = `
+                <i class="fas fa-user"></i>
+                <div class="participant-name">User ${peerId.substr(0, 8)}</div>
+            `;
+            
+            // Create video tile
             const tile = document.createElement('div');
             tile.className = 'video-tile';
             tile.id = `tile-${peerId}`;
+            tile.style.display = 'none';
             
             const video = document.createElement('video');
             video.autoplay = true;
@@ -398,14 +458,24 @@
             
             tile.appendChild(video);
             tile.appendChild(userInfo);
+            
+            videoGrid.appendChild(avatar);
             videoGrid.appendChild(tile);
+            
+            // Check if video track is enabled
+            const videoTrack = stream.getVideoTracks()[0];
+            if (videoTrack && videoTrack.enabled) {
+                avatar.style.display = 'none';
+                tile.style.display = 'block';
+                videoGrid.classList.add('has-video');
+            }
         }
         
         function removeVideoTile(peerId) {
             const tile = document.getElementById(`tile-${peerId}`);
-            if (tile) {
-                tile.remove();
-            }
+            const avatar = document.getElementById(`avatar-${peerId}`);
+            if (tile) tile.remove();
+            if (avatar) avatar.remove();
         }
         
         function updateVideoGrid() {
@@ -570,6 +640,7 @@
             isVideoMuted = !isVideoMuted;
             localStream.getVideoTracks().forEach(track => track.enabled = !isVideoMuted);
             updateControlButtons();
+            updateLocalView();
             updateParticipantStatus({ is_video_off: isVideoMuted });
             broadcastMessage({ type: 'video-toggle', muted: isVideoMuted });
         }
@@ -651,6 +722,7 @@
                 
                 const participantsList = document.getElementById('participantsList');
                 const participantCount = document.getElementById('participantCount');
+                const videoGrid = document.getElementById('videoGrid');
                 
                 participantCount.textContent = data.participants.length;
                 
@@ -662,6 +734,33 @@
                         ${participant.is_video_off ? '<i class="fas fa-video-slash" style="color: #ef4444;"></i>' : ''}
                     </div>
                 `).join('');
+                
+                // Create avatars for participants not yet connected via WebRTC
+                data.participants.forEach(participant => {
+                    const participantId = `participant-${participant.user_name.replace(/\s+/g, '-').toLowerCase()}`;
+                    
+                    // Skip if this is the current user or if avatar already exists
+                    if (participant.user_name === 'You' || document.getElementById(`avatar-${participantId}`)) {
+                        return;
+                    }
+                    
+                    // Skip if WebRTC connection exists
+                    if (peers.has(participantId)) {
+                        return;
+                    }
+                    
+                    // Create avatar for participant
+                    const avatar = document.createElement('div');
+                    avatar.className = 'participant-avatar';
+                    avatar.id = `avatar-${participantId}`;
+                    avatar.innerHTML = `
+                        <i class="fas fa-user"></i>
+                        <div class="participant-name">${participant.user_name}</div>
+                    `;
+                    
+                    videoGrid.appendChild(avatar);
+                });
+                
             } catch (error) {
                 console.error('Load participants error:', error);
             }
