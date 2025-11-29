@@ -7,53 +7,152 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
-## About Laravel
+## Video Conference Platform - 150+ Attendees
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+A scalable video conferencing platform built with Laravel, WebRTC, and Mediasoup SFU. Supports 150+ concurrent participants with real-time features.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Features
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- ✅ **150+ Concurrent Users** - Mediasoup SFU architecture
+- ✅ **WebRTC** - Peer-to-peer video/audio streaming
+- ✅ **WebSockets** - Real-time signaling (Laravel Reverb)
+- ✅ **Recording** - Client-side meeting recordings
+- ✅ **Screen Sharing** - Share screens with all participants
+- ✅ **Chat** - Real-time messaging
+- ✅ **Bandwidth Adaptation** - Auto quality adjustment
+- ✅ **Reconnection** - Auto-reconnect on disconnect
+- ✅ **Google OAuth** - Secure authentication
+- ✅ **Hand Raising** - Queue system
+- ✅ **Polls** - Quick voting
 
-## Learning Laravel
+## Quick Start
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### One-Click Start (Windows)
+```bash
+start-all.bat
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Manual Start
 
-## Laravel Sponsors
+**Terminal 1: Laravel**
+```bash
+php artisan serve
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+**Terminal 2: Reverb WebSocket**
+```bash
+php artisan reverb:start
+```
 
-### Premium Partners
+**Terminal 3: Mediasoup SFU**
+```bash
+node mediasoup-server.js
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Access: **http://127.0.0.1:8000**
 
-## Contributing
+## Architecture
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```
+Users (150+) → Mediasoup SFU (Port 3000) → Laravel + Reverb (Port 8000/8080)
+```
 
-## Code of Conduct
+**How it works:**
+1. Each user sends 1 stream to SFU
+2. SFU forwards to all other users
+3. Linear bandwidth growth (not exponential)
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Tech Stack
 
-## Security Vulnerabilities
+- **Laravel 12** - Backend framework
+- **Mediasoup** - SFU for 150+ users
+- **Laravel Reverb** - WebSocket server
+- **WebRTC** - Real-time communication
+- **Redis** - Caching & queuing
+- **MySQL** - Database
+- **Tailwind CSS** - Styling
+- **Vite** - Asset bundling
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Installation
+
+```bash
+# Install dependencies
+composer install
+npm install
+
+# Setup environment
+cp .env.example .env
+php artisan key:generate
+
+# Run migrations
+php artisan migrate
+
+# Build assets
+npm run build
+```
+
+## Configuration
+
+### Google OAuth
+Update `.env`:
+```env
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_REDIRECT_URI=http://127.0.0.1:8000/auth/google/callback
+```
+
+### Database
+```env
+DB_DATABASE=meet
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+## Documentation
+
+- **README_150_USERS.md** - Complete guide for 150+ users
+- **START_SFU.md** - Detailed SFU setup
+- **FEATURES.md** - All features documentation
+- **SFU_INTEGRATION.md** - Advanced SFU topics
+
+## Production Deployment
+
+### Server Requirements
+- CPU: 8+ cores
+- RAM: 16GB+
+- Bandwidth: 500 Mbps+
+- OS: Ubuntu 22.04 LTS
+
+### Firewall Rules
+```bash
+sudo ufw allow 8000/tcp   # Laravel
+sudo ufw allow 8080/tcp   # Reverb
+sudo ufw allow 3000/tcp   # Mediasoup
+sudo ufw allow 10000:10100/udp  # RTC
+```
+
+### Process Manager
+```bash
+npm install -g pm2
+pm2 start mediasoup-server.js --name sfu
+pm2 start "php artisan reverb:start" --name reverb
+pm2 startup && pm2 save
+```
+
+## Capacity
+
+| Setup | Max Users | Bandwidth/User | Cost/Month |
+|-------|-----------|----------------|------------|
+| Mesh | 3-5 | High | Low |
+| **SFU** | **150+** | **Medium** | **$350** |
+| MCU | 500+ | Low | High |
+
+## Cost Estimate (Self-Hosted)
+
+- Server: c5.2xlarge ($250/month)
+- Bandwidth: 150 users ($100/month)
+- **Total: ~$350/month**
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT License

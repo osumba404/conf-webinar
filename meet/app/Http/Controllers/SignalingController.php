@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MeetingSignal;
 use App\Models\Meeting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Redis;
 
 class SignalingController extends Controller
 {
@@ -66,29 +68,21 @@ class SignalingController extends Controller
     
     private function relaySignal(Meeting $meeting, array $message, string $fromSession)
     {
+        $message['from'] = $fromSession;
         $targetSession = $message['target'] ?? null;
         
-        if ($targetSession) {
-            // Store signal for specific target
-            $signals = Cache::get("meeting.{$meeting->slug}.signals.{$targetSession}", []);
-            $signals[] = array_merge($message, ['from' => $fromSession]);
-            Cache::put("meeting.{$meeting->slug}.signals.{$targetSession}", $signals, 3600);
-        }
+        // Broadcast via WebSocket
+        broadcast(new MeetingSignal($meeting->slug, $message, $targetSession));
         
         return response()->json(['status' => 'relayed']);
     }
     
     private function broadcastMessage(Meeting $meeting, array $message, string $fromSession)
     {
-        $participants = Cache::get("meeting.{$meeting->slug}.participants", []);
+        $message['from'] = $fromSession;
         
-        foreach ($participants as $sessionId => $participant) {
-            if ($sessionId !== $fromSession) {
-                $signals = Cache::get("meeting.{$meeting->slug}.signals.{$sessionId}", []);
-                $signals[] = array_merge($message, ['from' => $fromSession]);
-                Cache::put("meeting.{$meeting->slug}.signals.{$sessionId}", $signals, 3600);
-            }
-        }
+        // Broadcast via WebSocket
+        broadcast(new MeetingSignal($meeting->slug, $message));
         
         return response()->json(['status' => 'broadcasted']);
     }
