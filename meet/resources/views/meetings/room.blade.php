@@ -110,6 +110,9 @@
                 <button class="control-btn inactive" id="screenBtn" title="Share Screen">
                     <i class="fas fa-desktop"></i>
                 </button>
+                <button class="control-btn inactive" id="recordBtn" title="Record Meeting">
+                    <i class="fas fa-record-vinyl"></i>
+                </button>
                 <button class="control-btn inactive" id="handBtn" title="Raise Hand">
                     <i class="fas fa-hand-paper"></i>
                 </button>
@@ -176,7 +179,9 @@
     </div>
 
 @push('scripts')
-<script>
+<script type="module">
+        import { MeetingRecorder, BandwidthManager, ReconnectionManager } from '/resources/js/meeting.js';
+        
         // WebRTC and Meeting State
         let localStream = null;
         let peers = new Map();
@@ -187,6 +192,10 @@
         let handQueue = [];
         let activeSpeaker = null;
         let sessionId = null;
+        let recorder = new MeetingRecorder();
+        let bandwidthManager = new BandwidthManager();
+        let reconnectionManager = new ReconnectionManager(initMeeting);
+        let isRecording = false;
         
         const iceServers = [
             { urls: 'stun:stun.l.google.com:19302' },
@@ -228,8 +237,21 @@
                 body: JSON.stringify({ type: 'join' })
             });
             
-            // Start polling for messages
+            // Subscribe to WebSocket channel
+            window.Echo.channel('meeting.{{ $meeting->slug }}')
+                .listen('.signal', (event) => {
+                    handleSignalingMessage(event.data);
+                });
+            
+            // Fallback polling
             startPolling();
+            
+            // Bandwidth monitoring
+            setInterval(() => {
+                peers.forEach((pc) => {
+                    bandwidthManager.adaptQuality(pc, localStream);
+                });
+            }, 10000);
         }
         
         function startPolling() {
@@ -298,9 +320,14 @@
             document.getElementById('muteBtn').onclick = toggleAudio;
             document.getElementById('videoBtn').onclick = toggleVideo;
             document.getElementById('screenBtn').onclick = toggleScreenShare;
+            document.getElementById('recordBtn').onclick = toggleRecording;
             document.getElementById('handBtn').onclick = toggleHand;
             document.getElementById('pollBtn').onclick = showPollModal;
             document.getElementById('leaveBtn').onclick = leaveMeeting;
+            
+            // Connection monitoring
+            window.addEventListener('online', () => reconnectionManager.attemptReconnect());
+            window.addEventListener('offline', () => console.log('Connection lost'));
             
             document.getElementById('chatInput').onkeypress = (e) => {
                 if (e.key === 'Enter') sendChatMessage();
@@ -381,6 +408,14 @@
                         candidate: event.candidate,
                         target: peerId
                     });
+                }
+            };
+            
+            pc.onconnectionstatechange = () => {
+                if (pc.connectionState === 'failed') {
+                    reconnectionManager.attemptReconnect();
+                } else if (pc.connectionState === 'connected') {
+                    reconnectionManager.reset();
                 }
             };
             
@@ -772,10 +807,26 @@
             broadcastMessage({ type: 'hand-raised', raised: isHandRaised });
         }
 
+        async function toggleRecording() {
+            if (!isRecording) {
+                await recorder.start(localStream, '{{ $meeting->slug }}');
+                isRecording = true;
+                document.getElementById('recordBtn').className = 'control-btn active';
+                broadcastMessage({ type: 'recording-started' });
+            } else {
+                const result = await recorder.stop('{{ $meeting->slug }}');
+                isRecording = false;
+                document.getElementById('recordBtn').className = 'control-btn inactive';
+                broadcastMessage({ type: 'recording-stopped', url: result.url });
+                alert('Recording saved: ' + result.url);
+            }
+        }
+        
         function updateControlButtons() {
             document.getElementById('muteBtn').className = `control-btn ${isAudioMuted ? 'active' : 'inactive'}`;
             document.getElementById('videoBtn').className = `control-btn ${isVideoMuted ? 'active' : 'inactive'}`;
             document.getElementById('handBtn').className = `control-btn ${isHandRaised ? 'primary' : 'inactive'}`;
+            document.getElementById('recordBtn').className = `control-btn ${isRecording ? 'active' : 'inactive'}`;
             
             const isScreenSharing = localStream && localStream.getVideoTracks()[0] && localStream.getVideoTracks()[0].label.includes('screen');
             document.getElementById('screenBtn').className = `control-btn ${isScreenSharing ? 'primary' : 'inactive'}`;
